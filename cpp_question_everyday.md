@@ -26,6 +26,7 @@
   - [22. 有了malloc/free为什么还要new/delete？](#22-有了mallocfree为什么还要newdelete)
   - [23. C++ multiple inheritance ambiguous member](#23-c-multiple-inheritance-ambiguous-member)
   - [24. 强转类型标识符 `dynamic_cast`, `static_cast`, `reinterpret_cast`, `const_cast`, `safe_cast` 使用区别](#24-强转类型标识符-dynamic_cast-static_cast-reinterpret_cast-const_cast-safe_cast-使用区别)
+  - [25. What happens to global and static variables in a shared library when it is dynamically linked?](#25-What-happens-to-global-and-static-variables-in-a-shared-library-when-it-is-dynamically-linked?)
 
 ## 1. C++中能否使用空对象指针调用成员函数
 > Yes, 只要不涉及到成员变量。因为此时`this`指针指向`nullptr`  
@@ -717,3 +718,6 @@ public:
 
 ## 24. 强转类型标识符 `dynamic_cast`, `static_cast`, `reinterpret_cast`, `const_cast`, `safe_cast` 使用区别
 > [answer](https://stackoverflow.com/questions/332030/when-should-static-cast-dynamic-cast-const-cast-and-reinterpret-cast-be-used)
+
+## 25. What happens to global and static variables in a shared library when it is dynamically linked?
+> [answer](https://stackoverflow.com/questions/19373061/what-happens-to-global-and-static-variables-in-a-shared-library-when-it-is-dynam)
