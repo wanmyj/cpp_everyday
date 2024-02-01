@@ -8,6 +8,36 @@
 ## internal 修饰符作用
 访问级别：仅限于当前程序集(DLL or EXE)，不限制命名空间
 
+## event 和 delegate
+`delegate`是用来声明“函数指针”的关键词。是将**函数名**作为**函数的参数**来使用，将**一个函数的声明的函数名**作为一个相当于**数据类型**的存在
+
+```csharp
+public void PrintA() => Console.WriteLine("A");
+public void PrintB() => Console.WriteLine("B");
+
+public delegate void DelegateMethod();
+// 注意类型和返回值必须一致
+var trigger1 = new DelegateMethod(PrintA);
+var trigger2 = new DelegateMethod(PrintB);
+
+var trigger3 = trigger1 + trigger2;
+trigger3();
+```
+```
+A
+B
+```
+`event`是专门用于修饰`delegate`变量的修饰词。即，可有如下两种方式声明一个`delegate`变量
+```csharp
+public event DelegateMethod trigger4;
+public DelegateMethod trigger5;
+```
+event修饰过的delegate有如下限定：
+> trigger4只能定义在类中，不能定义在类外部。trigger5则可以。   
+假设trigger4定义在类A中，只有A内部的函数能激发trigger4，A外部的指令没有权限激发。而trigger5没有这个限制。   
+假设trigger4定义在类A中，A外部的指令无法给trigger4赋值=，只能注册+=或注销-=函数指针。而trigger5没有这个限制。   
+ 
+
 ## 简述static的用法和作用
 静态类
 > 静态类不能实例化，不能使用 new。没有非静态的成员变量，不能被继承，没有普通构造函数
