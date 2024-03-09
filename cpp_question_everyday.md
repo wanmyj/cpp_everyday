@@ -5,9 +5,9 @@
   - [1. C++中能否使用空对象指针调用成员函数](#1-c中能否使用空对象指针调用成员函数)
   - [2. delete delete[]](#2-delete-delete)
   - [3. `shared_ptr`, `unique_ptr`, `weak_ptr` 这三个智能指针的用法和区别](#3-shared_ptr-unique_ptr-weak_ptr-这三个智能指针的用法和区别)
-  - [4. git clean](#4-git-clean)
+  - [4. 类的内存分布](#4-类的内存分布)
   - [5. 虚基类](#5-虚基类)
-  - [6. git bisect](#6-git-bisect)
+  - [6. 重载重写重定向](#6-重载重写重定向)
   - [7. C++ 中 const. static. extern. ref. volatile. explicit 的意思](#7-c-中-const-static-extern-ref-volatile-explicit-的意思)
   - [8. 'const int p' int const p . int * const p的区别](#8-const-int-p-int-const-p--int--const-p的区别)
   - [9 C/C++ 混合编程](#9-cc-混合编程)
@@ -27,6 +27,8 @@
   - [23. C++ multiple inheritance ambiguous member](#23-c-multiple-inheritance-ambiguous-member)
   - [24. 强转类型标识符 `dynamic_cast`, `static_cast`, `reinterpret_cast`, `const_cast`, `safe_cast` 使用区别](#24-强转类型标识符-dynamic_cast-static_cast-reinterpret_cast-const_cast-safe_cast-使用区别)
   - [25. What happens to global and static variables in a shared library when it is dynamically linked?](#25-global-and-static-variables-in-a-shared-library)
+  - [26. RVO](#26-返回值优化)
+  - [27. -强枚举类型](#27-强枚举类型)
 
 ## 1. C++中能否使用空对象指针调用成员函数
 > Yes, 只要不涉及到成员变量。因为此时`this`指针指向`nullptr`  
@@ -39,6 +41,7 @@ Using `delete` on a pointer returned by `new []` or `delete []` on a pointer ret
 
 
 ## 3. `shared_ptr`, `unique_ptr`, `weak_ptr` 这三个智能指针的用法和区别
+weak_ptr就是shared_ptr的不计数版本，对对象的生命周期没有控制权
 ```cpp
 // C++ program to illustrate the use of unique_ptr 
 #include <iostream>
@@ -155,8 +158,34 @@ Output:
 1
 0x1c41c20
 ```
-## 4. git clean
-> 可以清除新增加的文件 尤其是没有被track的 比如自己编译出来的新增 或者一些新的代码文件需要回退
+## 4. 类的内存分布
+> 对于常规类：   
+静态数据成员虽然属于类，但不占用具体类对象的内存。   
+成员函数不占用具体类对象内存空间，成员函数存在代码区。   
+数据成员的访问级别并不影响其在内存的排布和大小，均是按照声明的顺序在内存中有序排布，并适当对齐。   
+
+>有虚函数的类：   
+类内存的起始处存储的是虚指针vptr，与虚函数数量无关
+
+>单一继承且无虚函数：   
+每个派生类中起始位置都是Base class subobject。
+
+>单一继承且有虚函数：   
+基类虚指针，基类的object，派生类的object
+
+>多重继承：   
+派生类C中依其继承的基类的顺序，存放了各个基类subobject及各自的vptr，然后才是Class C自己的数据成员
+
+> 菱形继承：   
+D中依次存放基类B subobject和基类C subobject。其中B和C中均存放一份class A subobject。
+
+> 虚拟继承：   
+class B中有两个虚指针：第一个指向B自己的虚表，第二个指向虚基类A的虚表。   
+而且，从布局上看，class B的部分要放在前面，虚基类A的部分放在后面。   
+在class B中虚基类A的成分相对内存起始处的偏移offset等于class B的大小（8字节）  
+- Class如果内含一个或多个virtual base subobjects，将被分割成两部分：一个不变区域和一个共享区域。不变区域中的数据，不管后继如何衍化，总有固定的offset（从object的开头算起），所以这一部分可以直接存取。而共享区域所表现的就是virtual base class subobject。这部分数据的位置会因为每次的派生操作而发生变化，所以它们只可以被间接存取。
+
+> 看class D的内存布局：直接的基类B和C按照声明的继承顺序，在D的内存中顺序安放。紧接着是D的data member。然后是共享区域virtual base class A。
 
 ## 5. 虚基类 
 > 虚基类是用关键字virtual声明继承的父类，即便该基类在多条链路上被一个子类继承，但是该子类中只包含一个该虚基类的备份，虚基类主要用来解决继承中的二义性问题，这就是是虚基类的作用所在。
@@ -203,31 +232,24 @@ CBase deconstructor!
 CDerive1 deconstructor! 
 CBase deconstructor! 
 ```
-## 6. git bisect
-`git bisect` is to perform a binary search in the history to find a particular regression.
-```
-git stash push
-git bisect start
-git bisect bad (omit if HEAD)
-git bisect good commitID
-test UT
-git bisect good
-test UT
-git bisect bad
-git bisect reset
-```
-If you are familiar with unit testing, you could write a unit test that identifies the bug. In case you want to run the tests automatically, you need to provide Git the test script that you have written.
-```
-git bisect start
-git bisect run [location_to_script_file]
-```
+## 6. 重载重写重定向
 
+| 概念   | 作用域关系       | 函数名   | 参数      | 返回值     | virtual关键字     | 访问修饰符 |
+| ------ | ------------ | ---------- | --------- | --------- | ---------------- | ---------- |
+| 重载   | 相同的作用域     | 相同     | 不同      | 都可以   | -                 | -          |
+| 重写   | 不同（派生/基类） | 相同     | 相同     | 相同    | 必须有， 不能有static| 可以不同   |
+| 重定义 | 不同（派生/基类） | 相同     | 都可以    | 都可以 |    见下         | -          |
+
+>重定义：基类指针返回的函数是基类函数   
+如果基类函数没有virtual关键字，则必然产生会重定义   
+如果基类函数  有virtual关键字，但参数不同，则也产生会重定义
+ 
 ## 7. C++ 中 const. static. extern. ref. volatile. explicit 的意思
 > [ss](https://www.geek-share.com/detail/2643706224.html)
-> [ss2](https://blog.csdn.net/qingdujun/article/details/75145023)
 
 ## 8. 'const int p' int const p . int * const p的区别
-> ss
+> 就是常量指针和指针常量。从右向左读 `int * const p`, "p is a const pointer to int"   
+注意：两个成员函数如果只是常量性不同，是可以被重载的
 
 ## 9 C/C++ 混合编程
  extern "C"
@@ -251,10 +273,11 @@ void display();
 ## 11. C++11如何创建单例类
 
 在单线程环境下
-搞一个static的函数，函数内有个static变量，并return这个变量的地址
+**构造**，**析构**，**拷贝**，**赋值**四个构造函数全部private\
+搞一个static的函数，有个static变量，并return这个变量的地址
 
 ```cpp
-// 懒汉式实现 
+// 懒汉式实现 (指系统运行中，实例并不存在, 要考虑线程安全)
 class CSingleton
 {
 private:
@@ -273,7 +296,7 @@ public:
 
 };  
 
-// 饿汉式实现
+// 饿汉式实现(指系统一运行，就初始化创建实例, 线程安全)
 class CSingleton
 {
 private:
@@ -321,7 +344,15 @@ map：内部元素有序，查找和删除操作都是 logn 的时间复杂度�
 > 对于要求内部元素有序的使用 map，对于要求查找效率的用 unordered_map
 
 ## 13. C++的内存管理，话题太大，不具体出题了，
-> [答案](https://blog.csdn.net/caogenwangbaoqiang/article/details/79788368)
+> [答案](https://blog.csdn.net/caogenwangbaoqiang/article/details/79788368)   
+代码段（text）：就是C程序编译后的机器指令，也就是我们常见的汇编代码。   
+数据段（data）：\
+    &ensp; &ensp; 数据区：⽤来存放显式初始化的全局变量或者静态（全局）变量，常量数据.\
+    &ensp; &ensp; BSS段（Block Started by Symbol): 存储未初始化的全局变量或者静态（全局）变量。编译器给处理成0；   
+堆段（heap): 动态内存分配的区域，也就是malloc申请的内存区，使⽤free()函数来释放内存\
+    &ensp; &ensp; 堆区：new\
+    &ensp; &ensp; 自由存储区：malloc\
+栈段(stack)：存放函数调⽤相关的参数、局部变量的值，以及在任务切换的上下⽂信息。栈区是由操作系统分配和管理的区域。   
 
 ## 14. STL 源码中的 hash 表的实现
 > hashtable 是采用开链法来完成的，（vector + list）
@@ -692,8 +723,6 @@ int main()
 移动语义对swap()函数的影响也很大，之前实现swap可能需要三次内存拷贝，而有了移动语义后，就可以实现高性能的交换函数了。
 
 ## 21. C++11下条件变量之虚假唤醒
-https://blog.csdn.net/abc1990fly/article/details/79469216
-
 https://blog.csdn.net/pi9nc/article/details/37043123
 
 ## 22. 有了malloc/free为什么还要new/delete？
@@ -721,6 +750,89 @@ public:
 
 ## 24. 强转类型标识符 `dynamic_cast`, `static_cast`, `reinterpret_cast`, `const_cast`, `safe_cast` 使用区别
 > [answer](https://stackoverflow.com/questions/332030/when-should-static-cast-dynamic-cast-const-cast-and-reinterpret-cast-be-used)
+dynamic_cast 只能够用在指向类的指针或者引用上(或者void*)。会做类型检查，检查不通过会返回空指针，或者对引用来说会抛异常。\
+static_cast能够完成指向**相关类**的指针上的转换。upcast和downcast都能够支持，但不同的是，并不会做类型检查\
+reinterpret_cast能够完成任意指针类型向任意指针类型的转换，reinterpret_cast能做但static_cast不能做的转换大多都是一些基于重新解释二进制的底层操作，因此会导致代码限定于特定的平台进而导致差移植性\
+const_cast可以用来设置或者移除指针所指向对象的const。例如，要把一个const指针传入一个接受非const指针的函数里。在移除const之后假如真的向目标进行写操作将导致UB。
+
 
 ## 25. global and static variables in a shared library
 > [answer](https://stackoverflow.com/questions/19373061/what-happens-to-global-and-static-variables-in-a-shared-library-when-it-is-dynam)
+
+## 26. 返回值优化
+返回值优化分为RVO和NRVO。   
+```
+T f()
+{
+    return T(constructor arguments);
+}
+T t = f();
+```
+
+Theoretically, there could be 3 objects of type T created here:
+
+* the object constructed inside f in the return statement (which happens to be a temporary because it does not have a name),
+* the temporary object returned by f, copied from the one above,
+* the named object t, copied from the one above.
+
+The RVO lets the compiler remove the two temporaries by directly initializing t with the constructor arguments passed inside the body of f.
+
+But for the RVO to be applied, the returned object has to be constructed on a **return statement**. Therefore this object does not have a name.
+
+The NRVO (Named-RVO) goes one step further: it can remove the intermediary objects even if the returned object has a name and is therefore not constructed on the return statement. So this object can be constructed before the return statement, like in the following example:
+```
+T f()
+{
+    T result(....);
+    return result;
+}
+```
+But, like with the RVO, the function still needs to return a unique object (which is the case on the above example), so that the compiler can determine which object inside of f it has to construct at the memory location of t (outside of f).
+
+## 27. 强枚举类型
+```
+enum class - enumerator names are local to the enum and their values do not implicitly convert to other types (like another enum or int)
+
+Plain enum - where enumerator names are in the same scope as the enum and their values implicitly convert to integers and other types
+
+enum class Color1 { red, green, blue };    //this will compile
+enum class Color2 { red, green, blue };
+
+enum Color1 { red, green, blue };    //this will not compile 
+enum Color2 { red, green, blue };
+
+Color1 a = Color2::red; // error Color2::red is not a color1
+```
+
+## 28. 运算符重载
+形式可以表现为类的成员函数，也可以表现为类的友元函数。   
+前置++重载时没有参数，而后置++重载时有参数。不会使用其参数，仅仅是区分用。
+和`. , :` 相关的运算符不可以重载，还有逻辑与或运算符，四个case不能重载。
+
+## 28. 运算符重载
+> 构造函数获得资源，析构函数释放资源。\
+实现指针的解引用，-> 运算, bool运算 \
+类内包含指针的话，就少不了三个函数，拷贝构造，拷贝赋值，析构函数。\
+unique智能指针还需要move，移动语义构造函数\
+根据C++的规则，我们提供了搬移构造而没有提供拷贝构造，那拷贝构造就自动被禁用。\
+\
+在拷贝里面实现搬移的操作，把原指针的对象赋值给新指针，原指针就不能再用了，对应 std::unique_ptr\
+原指针和新指针都指向那一个对象，在智能指针里添加一个引用计数，引用计数为0后删除该对象，对应 std::shared_ptr \
+实现一个share_count 类，用来处理引用计数增加减少的操作。在share_ptr里，放入share_count的指针
+
+## volatile
+volatile int i = 10; 
+volatile  告诉编译器不要对象优化。
+volatile 关键字声明的变量，每次访问时都必须从内存中取出值（没有被 volatile 修饰的变量，可能由于编译器的优化，从 CPU 寄存器中取值）
+const 和 指针 都可以是 volatile
+
+## move的意义是什么
+避免拷贝\
+对于一个左值，肯定是调用拷贝构造函数了，但是有些左值是局部变量，生命周期也很短，能不能也移动而不是拷贝呢？C++11为了解决这个问题，提供了`std::move()`方法来将左值转换为右值，从而方便应用移动语义。\
+局部变量的左值，当右值使用，走到右值引用的(构造)函数里\
+```cpp
+MyString str1("hello"); //调用构造函数
+MyString str4(std::move(str1)); // 调用移动构造函数. 
+```
+
+## using用法总结
