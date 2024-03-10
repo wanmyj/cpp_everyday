@@ -21,7 +21,7 @@
   - [17. the difference between `constexpr` and `const`](#17-the-difference-between-constexpr-and-const)
   - [18.  虚函数（virtual）可以是内联函数（inline）吗？如果一般不可以，在什么时候可以？如果一般可以，在什么情况下不可以？](#18--虚函数virtual可以是内联函数inline吗如果一般不可以在什么时候可以如果一般可以在什么情况下不可以)
   - [19.  如何定义一个只能在堆上（栈上）生成对象的类？](#19--如何定义一个只能在堆上栈上生成对象的类)
-  - [20. C++11 右值引用. 移动语义和完美转发](#20-c11-右值引用-移动语义和完美转发)
+  - [20. C++11 右值引用. 移动语义](#20-c11-右值引用-移动语义)
   - [21. C++11下条件变量之虚假唤醒](#21-c11下条件变量之虚假唤醒)
   - [22. 有了malloc/free为什么还要new/delete？](#22-有了mallocfree为什么还要newdelete)
   - [23. C++ multiple inheritance ambiguous member](#23-c-multiple-inheritance-ambiguous-member)
@@ -236,7 +236,7 @@ CBase deconstructor!
 
 | 概念   | 作用域关系       | 函数名   | 参数      | 返回值     | virtual关键字     | 访问修饰符 |
 | ------ | ------------ | ---------- | --------- | --------- | ---------------- | ---------- |
-| 重载   | 相同的作用域     | 相同     | 不同      | 都可以   | -                 | -          |
+| 重载   | 相同的作用域     | 相同     | 不同      | 都可以   | -                  | -          |
 | 重写   | 不同（派生/基类） | 相同     | 相同     | 相同    | 必须有， 不能有static| 可以不同   |
 | 重定义 | 不同（派生/基类） | 相同     | 都可以    | 都可以 |    见下         | -          |
 
@@ -520,7 +520,7 @@ int array[x.getvalue()]; // OK. x.getvalue() is constexpr and can be evaluated a
 原因：
 > 在堆上生成对象，使用 new 关键词操作，其过程分为两阶段：第一阶段，使用 new 在堆上寻找可用内存，分配给对象；第二阶段，调用构造函数生成对象。将 new 操作设置为私有，那么第一阶段就无法完成，就不能够在堆上生成对象。
 
-## 20. C++11 右值引用. 移动语义和完美转发
+## 20. C++11 右值引用. 移动语义
 C++中所有的值都必然属于左值. 右值二者之一。左值是指表达式结束后依然存在的持久化对象，右值是指表达式结束时就不再存在的临时对象。所有的具名变量或者对象都是左值，而右值不具名。很难得到左值和右值的真正定义，但是有一个可以区分左值和右值的便捷方法：看能不能对表达式取地址，如果能，则为左值，否则为右值。
 
 ```cpp
@@ -836,3 +836,86 @@ MyString str4(std::move(str1)); // 调用移动构造函数.
 ```
 
 ## using用法总结
+1、导入命名空间 `using namespace std;`
+2、指定别名: 和`typedef`相比，可以用于模板类，但在定义一般类型的别名没区别。
+3、在派生类中引用基类成员：如下代码所示，尽管派生类 Derived 对 基类 Base 是私有继承，但通过 using 声明，派生类的对象就可以访问基类的 proteced 成员变量和 public 成员函数了
+```cpp
+class Base{
+protected:
+    int bn1;
+    int bn2;
+};
+ 
+class Derived: private Base{
+public:
+    using Base::bn1;
+};
+ 
+class DerivedAgain: public Derived{
+};
+ 
+int main(){
+    Derived d;
+    DerivedAgain da; 
+    d.bn1 = 1;
+    // d.bn2 = 2; //error, 'bn2' is a private member of 'Base'
+    da.bn1 = 3;  //ok
+    std::cout<<d.bn1<<std::endl;
+    return 0;
+}
+```
+
+## 引用折叠和完美转发
+万能引用：函数，既能接收左值，又能接收右值，不用写两个重载函数
+```cpp
+template<typename T>
+ReturnType Function(T&& parem)
+{
+    // 函数功能实现
+}
+```
+引用折叠：以上万能引用的入参，如果任一引用为左值引用，则结果为左值引用。否则（即两个都是右值引用），结果为右值引用。
+非完美转发：万能引用的函数，在函数内部的参数使用中，都是当成左值进行传递
+完美转发：万能引用的函数，在函数内部的参数使用中，能保持对应的实参类型
+```cpp
+// 万能引用，转发接收到的参数 param
+template<typename T>
+void PrintType(T&& param)
+{
+	f(param);  // 非完美转发 将参数param转发给函数 void f()
+    f(std::forward<T>(param)); // 完美转发
+}
+
+// 接收左值的函数 f()
+template<typename T>
+void f(T &)
+{
+	cout << "f(T &)" << endl;
+}
+
+// 接收右值的函数f()
+template<typename T>
+void f(T &&)
+{
+	cout << "f(T &&)" << endl;
+}
+int main(int argc, char *argv[])
+{
+	int a = 0;
+	PrintType(a);//传入左值 f(T &);
+	PrintType(int(0));//传入右值 f(T &);
+}
+```
+完美转发实现逻辑：利用引用折叠，
+|入参类型|`T &param`| static_cast<T&&>(param) |
+|-------|----------|-------------------------|
+|值     |左值引用|右值引用|
+|左值引用|左值引用|左值引用 `static_cast<int& &&>(param);` -> `static_cast<int&>(param);` |
+|右值引用|左值引用|右值引用 `static_cast<int&&>(param);`|
+```cpp
+template<typename T>
+T&& forward(T &param)
+{
+	return static_cast<T&&>(param);
+}
+```
