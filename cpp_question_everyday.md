@@ -369,6 +369,9 @@ map：内部元素有序，查找和删除操作都是 logn 的时间复杂度�
 在什么时候需要使用“常引用”？  
 将“引用”作为函数返回值类型的格式. 好处和需要遵守的规则?
 
+空指针能不能当引用的传参？\
+答：不能，引用必须要初始化。空指针解引用会发生未定义错误
+
 ## 16. C++ 中的重载和重写(覆盖)的区别（重定义）
 重写，是指派生类中存在重新定义的函数。  
 其函数名，参数列表，**返回值类型**，所有都必须同基类中被重写的函数**一致**。只有函数体不同（花括号内），派生类调用时会调用派生类的重写函数，不会调用被重写函数。重写的基类中被重写的函数必须有virtual修饰。
@@ -790,7 +793,7 @@ T f()
 But, like with the RVO, the function still needs to return a unique object (which is the case on the above example), so that the compiler can determine which object inside of f it has to construct at the memory location of t (outside of f).
 
 ## 27. 强枚举类型
-```
+```cpp
 enum class - enumerator names are local to the enum and their values do not implicitly convert to other types (like another enum or int)
 
 Plain enum - where enumerator names are in the same scope as the enum and their values implicitly convert to integers and other types
@@ -810,15 +813,23 @@ Color1 a = Color2::red; // error Color2::red is not a color1
 和`. , :` 相关的运算符不可以重载，还有逻辑与或运算符，四个case不能重载。
 
 ## 28. RAII实现两种智能指针的过程
-> 构造函数获得资源，析构函数释放资源。\
-实现指针的直接引用，-> 运算, bool运算 \
-类内包含指针的话，就少不了三个函数，拷贝构造，拷贝赋值，析构函数。\
-unique智能指针还需要move，移动语义构造函数\
-根据C++的规则，我们提供了转移构造而没有提供拷贝构造，那拷贝构造就自动被禁用。\
+> 共同:\
+构造函数获得资源，析构函数释放资源。\
+解引用运算符：` T& operator*();`\
+箭头运算符: `T* operator->();`\
+重载布尔值操作: `operator bool();`\
 \
-在拷贝里面实现搬移的操作，把原指针的对象赋值给新指针，原指针就不能再用了，对应 std::unique_ptr\
-原指针和新指针都指向那一个对象，在智能指针里添加一个引用计数，引用计数为0后删除该对象，对应 std::shared_ptr \
-实现一个share_count 类，用来处理引用计数增加减少的操作。在share_ptr里，放入share_count的指针
+[Unique_ptr:](https://supwills.com/post/understanding-cpp-smart-pointer/#stdunique_ptr) \
+私有成员： `T *ptr;` \
+删除两个函数：拷贝构造，拷贝赋值 \
+普通构造函数：`UniquePtr();` and `UniquePtr(T *_ptr);`\
+移动构造函数: `UniquePtr(UniquePtr &&p);` \ 
+移动赋值函数： `UniquePtr<T>& operator=(UniquePtr &&p);`\
+\
+[std::shared_ptr:](https://juejin.cn/post/7099802726952402951) \
+私有成员：`size_t *count;`, `T *ptr;` \
+构造函数，拷贝构造函数，拷贝赋值函数，移动构造函数，移动赋值函数都要有\
+移动构造函数: this的count与入参的交换（而后入参count为0），数据指针赋值为入参的数据指针,入参数据指针＝0
 
 ## volatile
 volatile int i = 10; 
@@ -838,7 +849,7 @@ MyString str4(std::move(str1)); // 调用移动构造函数.
 ## using用法总结
 1、导入命名空间 `using namespace std;`
 2、指定别名: 和`typedef`相比，可以用于模板类，但在定义一般类型的别名没区别。
-3、在派生类中引用基类成员：如下代码所示，尽管派生类 Derived 对 基类 Base 是私有继承，但通过 using 声明，派生类的对象就可以访问基类的 proteced 成员变量和 public 成员函数了
+3、在派生类中引用基类成员：如下代码所示，尽管派生类 Derived 对 基类 Base 是私有继承，但通过 using 声明，派生类的对象就可以访问基类的 protected 成员变量和 public 成员函数了
 ```cpp
 class Base{
 protected:

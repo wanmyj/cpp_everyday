@@ -129,15 +129,15 @@ int main() {
 int factorial(std::future<int>& f) {
     int res = 1;
     int N = f.get();
-    ....
+    return N;
 }
 int main() {
     std::promise<int> p; // promise 不能被赋值和拷贝，只能用move
     std::future<int> f = p.get_future();
-    std::future<int> fu = std::async(std::launch::async, factorial, std::ref);
+    std::future<int> fu = std::async(std::launch::async, factorial, std::ref(f));
     // do something else
-    p,.set_value(4);
-    x = fu.get();
+    p.set_value(4);
+    int x = fu.get();
     return 0;
 }
 ```
