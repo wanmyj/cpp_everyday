@@ -1,11 +1,13 @@
 #include <iostream>
 #include <cstring>
+using namespace std;
 class String {
     unsigned m_length;
     char* m_pData;
 public:
     //通用构造函数
     String(const char * in = "") : m_length(strlen(in)), m_pData(new char[m_length+1]) {
+        // in 为空的话要抛异常
         strcpy(m_pData, in);
     }
     // 拷贝构造函数
@@ -39,7 +41,7 @@ public:
         return *this;
     }
     // 实现if(ptr)
-    explicit operator bool() const noexcept {
+    operator bool() const noexcept {
         return m_pData != nullptr;
     }
     //析构函数
@@ -47,7 +49,18 @@ public:
         if (!m_pData)
             delete[] m_pData;
     }
+    friend ostream& operator<<(ostream& out, const String& str);
+    friend istream& operator>>(istream& out, const String& str);
 };
+istream& operator>>(istream& in, const String& str) {
+    in>>str.m_pData;
+    return in;
+
+}
+ostream& operator<<(ostream& out, const String& str) {
+    out << str.m_pData;
+    return out;
+}
 
 class Solution {
 public:
