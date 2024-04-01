@@ -1,12 +1,3 @@
-## 设计模式七大原则
-1) 单一职责原则：一个类应该只负责一项职责。
-2) 接口隔离原则：客户端不应该依赖它不需要的接口
-3) 依赖倒转(倒置)原则：程序要依赖于抽象接口，不要依赖于具体实现
-4) 里氏替换原则：父类中凡是已经实现好的方法，实际上是在设定规范和契约
-5) 开闭原则：模块和函数应该 对扩展开放( 对提供方)，对 修改关闭( 对使用方)。
-6) 迪米特法则：一个对象应该对其他对象保持最少的了解
-7) 合成复用原则：尽量使用合成/聚合的方式，而不是使用继承
-
 ## IPC
 1. **管道 (Pipe)**：一种半双工的通信方式，数据只能单向流动，用于有血缘关系的进程间通信。
 2. **命名管道 (Named Pipe)**：类似于管道，但它允许无亲缘关系进程间的双向通信，并且可以在文件系统中以文件形式存在。
@@ -55,6 +46,9 @@ PostMessage：发送给某个线程下的某个窗口
 ## 什么是消息映射
 “消息映射”用于指定哪些函数将处理特定类的各种消息。
 
+## sendmessage vs postmessage 
+SendMessage waits for the target window to process the message, while PostMessage places the message in the message queue and returns immediately
+
 ## 报文分片和TCP重组
 一个IP数据报则可能会有8192字节，超过以太帧的最大限制，那么这时就需要IP分片，分批进行传输。
 
@@ -79,11 +73,43 @@ TCP协议可以避免了IP分片的发生，它会在TCP层对数据进行处理
 2. 特殊字符作为边界；
 3. 自定义消息结构。
 
-## 三次握手四次挥手
-1. 客户端发送一个带有SYN标志的TCP报文 -- 客户端什么都不能确认；服务器确认了对方发送正常，自己接收正常
-2. 服务器发送一个带有SYN和ACK标志的报文 -- 客户端确认了：自己发送、接收正常，对方发送、接收正常；服务器确认了：对方发送正常，自己接收正常
-3. 客户端再次发送一个带有ACK标志的报文（可以携带数据） -- 双方确认：自己发送、接收正常，对方发送、接收正常；
+## TCP UDP 通信的基本步骤如下：
+TCP:
 
+    服务端：socket---bind---listen---while(1){---[accept]---recv---send---close---}---close
+    客户端：socket-----------------------------[connect]---send---recv----------------close
+UDP:
+
+    服务端：socket---bind---recvfrom-----sendto---close
+    客户端：socket----------sendto-----recvfrom----close
+
+`connect()` 告诉 the local API 对方是谁，UDP不需要，也不需要`listen`, `accept`
+UDP用`sendto` `recvfrom` 就足够了
+
+服务端需要`bind`，是因为需要绑定一个固定的端口\
+客户端不需要`bind`，是在`connect`和`sendto`的时候会自动分配端口
+
+注意：`close`操作只是使相应socket描述字的引用计数-1，只有当引用计数为0的时候，才会触发TCP客户端向服务器发送终止连接请求。
+
+<img src="image.png" alt="drawing" style="width:400px;"/>
+
+1. 当客户端调用`connect`时，触发了连接请求，向服务器发送了SYN J包\
+这时connect进入阻塞状态；
+2. 服务器监听到连接请求，即收到SYN J包，调用accept函数接收请求向客户端发送SYN K ，ACK J+1 \
+这时accept进入阻塞状态；
+3. 客户端收到服务器的SYN K ，ACK J+1之后，这时connect返回，并对SYN K进行确认；\
+服务器收到ACK K+1时，accept返回，至此三次握手完毕，连接建立。
+
+## 三次握手四次挥手
+<img src="image-1.png" alt="drawing" style="width:400px;"/>
+
+<!-- ![alt text](image-1.png) -->
+握手
+1. 客户端发送一个带有SYN标志的TCP报文 -- C: syn_sent S:listening->syn_rcvd
+2. 服务器发送一个带有SYN和ACK标志的报文 -- C: syn_sent->established
+3. 客户端再次发送一个带有ACK标志的报文（可以携带数据） -- 双方确认：all ok S: syn_rcvd->established
+
+挥手
 1. 客户端发送一个FIN包，用来关闭客户端到服务器的数据传送。-- 客户端 established -> fin_wait1
 2. 服务器收到这个FIN包后，发送一个ACK确认包，告知已经接受到客户端的关闭请求，但还没有准备好关闭连接。客户端 fin_wait1 -> fin_wait2 服务端 established -> close_wait
 3. 服务器准备好关闭连接时，向客户端发送自己的FIN包，请求关闭从服务器到客户端的数据传输。客户端 fin_wait2 -> time_wait  服务端 close_wait -> last_ack
@@ -115,11 +141,132 @@ TCP协议可以避免了IP分片的发生，它会在TCP层对数据进行处理
 > 客户端最后返回的 ACK 包丢失\
   客户端在回复 ACK 后，会进入 TIME-WAIT 状态，开始长达 2MSL 的等待，服务端因为没有收到 ACK 的回复，会重试一段时间，直到服务端重试超时后主动断开。
 
-## sendmessage vs postmessage 
-SendMessage waits for the target window to process the message, while PostMessage places the message in the message queue and returns immediately
+## 域套接字
+UNIX域套接字用于在同一台机器上运行的进程之间的通信。\
+效率高。不执行协议处理，不需要网络报头，无需计算检验和，不要产生顺序号\
+AF_INET决定了要用ipv4地址（32位的）与端口号（16位的）的组合、AF_UNIX决定了要用一个绝对路径名作为地址。
+
+Server:
+```cpp
+// 创建服务器端的 Unix 域套接字
+int socket_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+
+// 设置本地服务器地址
+static const char* socket_path = "/home/mysocket";
+struct sockaddr_un local;
+local.sun_family = AF_UNIX;
+strcpy( local.sun_path, socket_path );
+/*确保该路径上不存在旧的同名 socket 文件。
+程序崩溃或者异常退出，文件可能不会被自动删除。这样就会留下一个孤立的 socket 文件。
+如果在调用 bind 函数之前不删除已存在的 socket 文件，那么 bind 可能会失败*/
+unlink(local.sun_path); 
+
+// 绑定套接字到本地地址
+if (bind(socket_fd, (struct sockaddr*)&local, len) != 0)
+// 监听连接请求，将socket改为被动
+if (listen(socket_fd, nIncomingConnections) != 0)
+
+// 等待客户端连接
+while (true) {
+    unsigned int sock_len = 0;
+    printf("Waiting for connection...\n");
+    int s2 = accept(socket_fd, (struct sockaddr*)&remote, &sock_len);
+        memset(recv_buf, 0, 100*sizeof(char));
+        memset(send_buf, 0, 200*sizeof(char));
+        data_recv = recv(s2, recv_buf, 100, 0);
+        send(s2, send_buf, strlen(send_buf)*sizeof(char), 0)
+}
+close(s2);
+```
+Client:
+```cpp
+// 创建一个 Unix 域套接字
+int sock = socket(AF_UNIX, SOCK_STREAM, 0);
+// 设置远程服务器的地址
+struct sockaddr_un remote;
+static const char* socket_path = "/home/mysocket";
+strcpy( local.sun_path, socket_path );
+remote.sun_family = AF_UNIX;
+
+// 连接到服务器
+connect(sock, (struct sockaddr*)&remote, data_len)
+// 发送消息给服务器 
+send(sock, send_msg, strlen(send_msg)*sizeof(char), 0 )
+// 接收服务器返回的消息
+data_len = recv(sock, recv_msg, s_recv_len, 0))
+```
+
+## io多路复用 
+允许单个线程或进程同时监视多个文件描述符是否可以执行 I/O 操作。 以socket 网络模型为例
+
+在 Linux 下，单个进程打开的文件描述符数是有限制的，没有经过修改的值一般都是 1024
+
+accept() 函数就会返回一个「已连接 Socket」，这时就通过 fork() 函数创建一个子进程。会根据返回值来区分是父进程还是子进程。子进程的返回值是0，父进程返回值为新子进程的进程ID。进程间上下文切换的“包袱”是很重的，做不了高并发。
+
+当服务器与客户端 TCP 完成连接后，通过 pthread_create() 函数创建线程，然后将「已连接 Socket」的文件描述符传递给线程函数，接着在线程里和客户端进行通信，从而达到并发处理的目的。可以提前创建若干个线程，使用线程池的方式来避免线程的频繁创建和销毁。线程在操作这个队列前要加锁。
+
+一个进程虽然任一时刻只能处理一个请求，但是处理每个请求的事件时，耗时控制在 1 毫秒以内，这样 1 秒内就可以处理上千个请求，进程可以通过一个系统调用函数`select/poll/epoll `从内核中获取多个事件，这就是多路复用。
+
+## 进程管理-进程复制
+`fork()` 是Unix和类Unix系统（如Linux）中用于进程复制的系统调用。当一个进程调用 `fork()` 时，它创建了一个新的进程。这个新的进程被称为子进程，而原始的进程则被称为父进程。
+
+## 限制进程对CPU的占用
+`nice` is a great tool for 'one off' tweaks to a system.
+```
+ nice COMMAND
+```
+
+`cpulimit` if you need to run a CPU intensive job and having free CPU time is essential for the responsiveness of a system.
+
+```
+cpulimit -l 50 -- COMMAND
+```
+
+`cgroups` apply limits to a set of processes, rather than to just one
+
+```
+cgcreate -g cpu:/cpulimited
+cgset -r cpu.shares=512 cpulimited
+cgexec -g cpu:cpulimited COMMAND_1
+cgexec -g cpu:cpulimited COMMAND_2
+cgexec -g cpu:cpulimited COMMAND_3
+```
+
+## 完整的linux系统包括哪些部分呢?
+三部分：bootloader、linux kernel(linux内核)、rootfile(根文件系统)。
+
+## 文件描述符和文件指针的区别：
+文件描述符：在linux系统中打开文件就会获得文件描述符，它是个很小的正整数。每个进程在PCB（Process Control Block）中保存着一份文件描述符表，文件描述符就是这个表的索引，每个表项都有一个指向已打开文件的指针。
+
+文件指针：C语言中使用文件指针做为I/O的句柄。
+
+## Linux的运行级别(runlevel)
+
+* 运行级别0：关机
+* 运行级别1：单用户工作状态，root权限，用于系统维护，禁止远程登陆 
+* 运行级别2：多用户状态(没有NFS网络) 
+* 运行级别3：完全的多用户状态(有NFS)，登陆后进入控制台命令行模式 
+* 运行级别4：系统未使用，保留 
+* 运行级别5：X11控制台，登陆后进入图形GUI模式 
+* 运行级别6：系统正常关闭并重启，默认运行级别不能设为6，否则不能正常启动
+
+## 什么是交换空间
+类似于Windows的虚拟内存，在RAM不够的时候拿ROM来做内存空间使用
+
+## 什么是硬链接和软链接
+硬链接：硬链接可以认为是指向文件索引节点(inode)的指针，系统并不为它重新分配 inode 。每添加一个一个硬链接，文件的链接数就加 1 。只有admin才能创建\
+软链接：就是原文件的一个路径。访问过去等于访问这个路径的文件
 
 ## 系统会自动打开和关闭的三个标准文件是
 操作系统会默认打开三个标准输入输出流:标准输入，标准输出，标准错误。
+
+## 内存泄漏
+检查最近新增代码的内存申请与释放部分\
+直接用Valgrind运行检测\
+另外遇到了不匹配地使用 malloc/new/new[] 和 free/delete/delete[]的问题，Valgrind也很容易检查出来。\
+使用二方库和三方库的时候，遇到了库内申请的内存需要用户代码自己释放的情况（个人反感这种设计），一定要认真阅读文档，必要时查看源代码确认。
+
+道听途说过有人遇到过高并发下出现泄漏的情况，用Valgrind拖慢了程序，查不出来。这时候可以重载下全局的malloc / free函数，申请和释放内存的时候打印函数和返回地址（用异步日志库），运行一段时间后写代码处理日志，找到泄漏点即可。
 
 ## strdup() 函数
 ```
