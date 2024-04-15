@@ -31,41 +31,72 @@ public:
     }
 };
 
+// typedef unsigned int uint;
+using uint = unsigned int;
 template <typename T>
 class s_ptr
 {
 private:
-    int* counter;
+    uint* counter;
     T* resource;
 public:
     // contructor
-    s_ptr(T* resc = nullptr) : counter(new int(1)), resource(resc) {}
+    s_ptr() : counter(new uint()), resource(nullptr) {}
+    s_ptr(T* resc = nullptr) : counter(new uint(1)), resource(resc) {}
     // copy contructor
     s_ptr(const s_ptr& rhs) : counter(rhs.counter), resource(rhs.resource) {
-        (*counter)++;
+        if (resource != nullptr)
+            (*counter)++;
     }
     // copy assign operator
     s_ptr& operator=(const s_ptr& rhs) {
         if (&rhs != this) {
-            (*counter)--;
-            if (*counter == 0) {
-                delete counter;
-                delete resource;
-            }
+            __cleanup__();
             resource = rhs.resource;
             counter = rhs.counter;
-            (*counter)++;
+            if (resource != nullptr)
+                (*counter)++;
+        }
+        return *this;
+    }
+    // move contructor
+    s_ptr(s_ptr&& rhs) noexcept : counter(rhs.counter), resource(rhs.resource) {
+        rhs.counter = nullptr;
+        rhs.resource = nullptr;
+    }
+    // move assign operator
+    s_ptr& operator=(s_ptr&& rhs) noexcept {
+        if (&rhs != this) {
+            __cleanup__();
+            resource = rhs.resource;
+            counter = rhs.counter;
+            rhs.counter = nullptr;
+            rhs.resource = nullptr;
         }
         return *this;
     }
     ~s_ptr() {
+        __cleanup__();
+    }
+    uint use_count() {
+        return *counter;
+    }
+    T* get() {
+        return resource;
+    }
+    T& operator*() {
+        return *resource;
+    }
+    T* operator->() {
+        return resource;
+    }
+private:
+    void __cleanup__() {
         (*counter)--;
         if (*counter == 0) {
             delete counter;
-            delete resource;
+            if (resource != nullptr)
+                delete resource;
         }
-    }
-    int use_count() {
-        return *counter;
     }
 };

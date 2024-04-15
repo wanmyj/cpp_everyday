@@ -1,83 +1,77 @@
 #include <iostream>
 #include <cstring>
 using namespace std;
-class String {
-    unsigned m_length;
-    char* m_pData;
+
+class my_string {
+private:
+    unsigned int size = 0;
+    char* buf = nullptr;
 public:
-    //通用构造函数
-    String(const char * in = "") : m_length(strlen(in)), m_pData(new char[m_length+1]) {
-        // in 为空的话要抛异常
-        strcpy(m_pData, in);
+    my_string() : size(0), buf(nullptr) {
+        cout<<"empty constructor called"<<endl;
     }
-    // 拷贝构造函数
-    String(const String& in) : m_length(in.m_length), m_pData(new char[m_length+1]) {
-        strcpy(m_pData, in.m_pData);
+    // 传0试一下，编译器会报错
+    my_string(const char* in) : size(strlen(in)), buf(new char[size+1]) {
+        cout<<"constructor const char* called"<<endl;
+        strcpy(buf, in);
     }
-    // 赋值符号函数  !!！一定判断是否是自身,一定要delete，而且要用[]
-    String& operator=(const String& rhs) {
+    my_string(nullptr_t) = delete;
+    my_string(const my_string& rhs) : size(rhs.size), buf(new char[size+1]) {
+        cout<<"copy constructor called"<<endl;
+        strcpy(buf, rhs.buf);
+    }
+    my_string& operator=(const my_string& rhs) {
+        cout<<"copy assignment operator called"<<endl;
         if (&rhs != this) {
-            m_length = rhs.m_length;
-            delete[] m_pData;
-            m_pData = new char[m_length+1];
-            strcpy(m_pData, rhs.m_pData);
+            __cleanup__();
+            size = rhs.size;
+            buf = new char[size+1];
+            strcpy(buf, rhs.buf);
         }
         return *this;
     }
-    // 移动拷贝构造函数 ！！！一定要加noexcept,
-    String(String&& in) noexcept : m_length(in.m_length), m_pData(in.m_pData) {
-        in.m_pData = nullptr;
-        in.m_length = 0;
+    my_string(my_string&& rhs) : size(rhs.size), buf(rhs.buf) {
+        cout<<"move constructor called"<<endl;
+        rhs.size = 0;
+        rhs.buf = nullptr;
     }
-    // 移动赋值符号函数 !!！一定要加noexcept,判断是否是自身,一定要delete，而且要用[]
-    String& operator=(String&& rhs) noexcept {
+    my_string& operator=(my_string&& rhs) {
+        cout<<"move assignment operator called"<<endl;
         if (&rhs != this) {
-            delete [] m_pData;
-            m_length = rhs.m_length;
-            m_pData = rhs.m_pData;
-            rhs.m_pData = nullptr;
-            rhs.m_length = 0;
+            __cleanup__();
+            size = rhs.size;
+            buf = rhs.buf;
+            rhs.size = 0;
+            rhs.buf = nullptr;
         }
         return *this;
     }
-    // 实现if(ptr)
     operator bool() const noexcept {
-        return m_pData != nullptr;
+        return buf != nullptr;
     }
-    //析构函数
-    ~String() {
-        if (!m_pData)
-            delete[] m_pData;
+    ~my_string() {
+        __cleanup__();
     }
-    friend ostream& operator<<(ostream& out, const String& str);
-    friend istream& operator>>(istream& out, const String& str);
-};
-istream& operator>>(istream& in, const String& str) {
-    in>>str.m_pData;
-    return in;
-
-}
-ostream& operator<<(ostream& out, const String& str) {
-    out << str.m_pData;
-    return out;
-}
-
-class Solution {
-public:
-    bool divisorGame(int n) {
-        int memo[n+1];
-        memo[0] = false;
-        memo[1] = false;
-        dfs(n, memo);
-    }
-    void dfs(int n, int * memo) {
-
+private:
+    void __cleanup__() {
+        if (buf != nullptr) {
+            delete [] buf;
+        }
+        size = 0;
     }
 };
 
 int main() {
-    String s1("Hello");
-    String s2(s1); // 调用拷贝构造函数
-    String s3(std::move(s1)); // 调用移动构造函数
+    my_string str1("Hello");
+    my_string str2(str1);
+    my_string str3;
+    str3 = str1;
+    my_string str4(std::move(str1));
+    my_string str5;
+    str5 = std::move(str1);
+    if (str1)
+        cout<<"str1 is not empty"<<endl;
+    else
+        cout<<"str1 is empty"<<endl;
     return 0;
 }

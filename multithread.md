@@ -1,3 +1,21 @@
+- [c++线程同步方式](#c线程同步方式)
+- [linux线程是如何进行切换的](#linux线程是如何进行切换的)
+- [如何证明一个数据结构是线程安全的](#如何证明一个数据结构是线程安全的)
+- [并行编程中多进程和多线程，什么情况下多进程能解决的多线程无法解决](#并行编程中多进程和多线程什么情况下多进程能解决的多线程无法解决)
+  - [使用线程的情况：](#使用线程的情况)
+  - [使用进程的情况：](#使用进程的情况)
+- [惊群现象](#惊群现象)
+- [程序什么时候应该使用线程，什么时候单线程效率高](#程序什么时候应该使用线程什么时候单线程效率高)
+- [锁的种类](#锁的种类)
+- [condition variable使用方式](#condition-variable使用方式)
+- [shared\_future](#shared_future)
+- [promise, future, and async](#promise-future-and-async)
+- [join和detach](#join和detach)
+- [死锁例子](#死锁例子)
+- [lock()函数，try\_lock()](#lock函数try_lock)
+- [unique\_lock vs lockguard](#unique_lock-vs-lockguard)
+
+
 ## c++线程同步方式
 * mutex
 * conditional_variable

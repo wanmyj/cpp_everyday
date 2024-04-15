@@ -1,3 +1,60 @@
+- [set自定义比较函数的方法](#set自定义比较函数的方法)
+- [except使用](#except使用)
+- [嵌套类的访问权限问题](#嵌套类的访问权限问题)
+- [void \*p 可以 p+1 吗](#void-p-可以-p1-吗)
+- [A a = func() 调用哪个构造函数](#a-a--func-调用哪个构造函数)
+- [在C++中，必须使用初始化列表来初始化成员变量的情况](#在c中必须使用初始化列表来初始化成员变量的情况)
+- [c++11的智能指针是否是线程安全的](#c11的智能指针是否是线程安全的)
+- [unique\_ptr能否做到零开销](#unique_ptr能否做到零开销)
+- [make\_shared和普通shared\_ptr的区别](#make_shared和普通shared_ptr的区别)
+- [空类的大小，空vector的大小](#空类的大小空vector的大小)
+- [静态绑定和动态绑定](#静态绑定和动态绑定)
+- [引用可以被取地址吗？空指针能否用来解引用，给函数引用传参？](#引用可以被取地址吗空指针能否用来解引用给函数引用传参)
+- [引用是否能实现动态绑定，为什么引用可以实现](#引用是否能实现动态绑定为什么引用可以实现)
+- [静态链接库、动态链接库的区别和特点](#静态链接库动态链接库的区别和特点)
+- [std::ref用法](#stdref用法)
+- [编译的四个过程](#编译的四个过程)
+- [字符串宏和合并操作](#字符串宏和合并操作)
+
+
+## set自定义比较函数的方法
+* lambda 函数法
+```cpp
+// 3 2 1 0
+auto cmp = [](int a, int b) { return a>b; };
+std::set<int, decltype(cmp)> s(cmp);
+// c++20 std::set<int, decltype(cmp)> s;
+```
+* 普通函数法
+```cpp
+bool cmp(int a, int b) {return a>b;}
+
+std::set<int, decltype(cmp)*> s1(cmp);
+std::set<int, decltype(&cmp)> s2(&cmp);
+```
+* 结构体()重载函数法
+```cpp
+struct cmp {
+    bool operator() (int a, int b) const { return a>b; }
+};
+std::set<int, cmp> s;
+```
+
+RTTI(Run Time Type Identification)即通过运行时类型识别，`decltype`属于编译时类型推导，类似于`auto`，自身特点是“以一个普通表达式作为参数，返回该表达式的类型”。
+
+## except使用
+throw 使用 `std::runtime_error` \
+catch 使用 `std::exception& e`\
+print 使用 `e.what()` e.g. `std::cerr << e.what() << '\n';`
+```cpp
+try {
+    if (true) throw std::runtime_error("error");
+}
+catch(std::exception& e) {
+    std::cerr << e.what() << '\n';
+}
+```
+
 ## 嵌套类的访问权限问题
 嵌套类是外围类的隐式友元，外围类对嵌套类的访问没有特权。
 
@@ -38,7 +95,7 @@ make_shared只需要一次连续的分配，不需要显式new，效率更好，
 
 ## 引用可以被取地址吗？空指针能否用来解引用，给函数引用传参？
 引用可以被取地址\
-编译是可以通过的，编译器可能会出现warning\
+空指针能解引用，编译是可以通过的，编译器可能会出现warning\
 这是一个未定义行为，运行期一旦使用这个引用的对象，肯定是会出问题的。但使用取地址运算符，不会有段错误。
 
 ## 引用是否能实现动态绑定，为什么引用可以实现

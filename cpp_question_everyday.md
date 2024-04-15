@@ -3,21 +3,21 @@
 
 - [C++每日一题](#c每日一题)
   - [1. C++中能否使用空对象指针调用成员函数](#1-c中能否使用空对象指针调用成员函数)
-  - [2. delete delete[]](#2-delete-delete)
+  - [2. delete delete\[\]](#2-delete-delete)
   - [3. `shared_ptr`, `unique_ptr`, `weak_ptr` 这三个智能指针的用法和区别](#3-shared_ptr-unique_ptr-weak_ptr-这三个智能指针的用法和区别)
   - [4. 类的内存分布](#4-类的内存分布)
   - [5. 虚基类](#5-虚基类)
   - [6. 重载重写重定向](#6-重载重写重定向)
   - [7. C++ 中 const. static. extern. ref. volatile. explicit 的意思](#7-c-中-const-static-extern-ref-volatile-explicit-的意思)
-  - [8. 'const int p' int const p . int * const p的区别](#8-const-int-p-int-const-p--int--const-p的区别)
+  - [8. 'const int p' int const p . int \* const p的区别](#8-const-int-p-int-const-p--int--const-p的区别)
   - [9 C/C++ 混合编程](#9-cc-混合编程)
   - [10. c++ 的 struct 和 class 的区别是什么，如果不考虑这个区别，能否混用（从内存结构分析），如果可以混用，struct的意义是什么](#10-c-的-struct-和-class-的区别是什么如果不考虑这个区别能否混用从内存结构分析如果可以混用struct的意义是什么)
   - [11. C++11如何创建单例类](#11-c11如何创建单例类)
-  - [12. C++11 STL 中 unordered_map 和 map 的区别 (底层实现, 优缺点，适用情况)](#12-c11-stl-中-unordered_map-和-map-的区别-底层实现-优缺点适用情况)
-  - [13. C++的内存管理，话题太大，不具体出题了，](#13-c的内存管理话题太大不具体出题了)
+  - [12. C++11 STL 中 unordered\_map 和 map 的区别 (底层实现, 优缺点，适用情况)](#12-c11-stl-中-unordered_map-和-map-的区别-底层实现-优缺点适用情况)
+  - [13. C++的内存管理](#13-c的内存管理)
   - [14. STL 源码中的 hash 表的实现](#14-stl-源码中的-hash-表的实现)
   - [15. 引用](#15-引用)
-  - [16. C++ 中的重载和重写(覆盖)的区别](#16-c-中的重载和重写覆盖的区别)
+  - [16. C++ 中的重载和重写(覆盖)的区别（重定义）](#16-c-中的重载和重写覆盖的区别重定义)
   - [17. the difference between `constexpr` and `const`](#17-the-difference-between-constexpr-and-const)
   - [18.  虚函数（virtual）可以是内联函数（inline）吗？如果一般不可以，在什么时候可以？如果一般可以，在什么情况下不可以？](#18--虚函数virtual可以是内联函数inline吗如果一般不可以在什么时候可以如果一般可以在什么情况下不可以)
   - [19.  如何定义一个只能在堆上（栈上）生成对象的类？](#19--如何定义一个只能在堆上栈上生成对象的类)
@@ -26,9 +26,17 @@
   - [22. 有了malloc/free为什么还要new/delete？](#22-有了mallocfree为什么还要newdelete)
   - [23. C++ multiple inheritance ambiguous member](#23-c-multiple-inheritance-ambiguous-member)
   - [24. 强转类型标识符 `dynamic_cast`, `static_cast`, `reinterpret_cast`, `const_cast`, `safe_cast` 使用区别](#24-强转类型标识符-dynamic_cast-static_cast-reinterpret_cast-const_cast-safe_cast-使用区别)
-  - [25. What happens to global and static variables in a shared library when it is dynamically linked?](#25-global-and-static-variables-in-a-shared-library)
-  - [26. RVO](#26-返回值优化)
-  - [27. -强枚举类型](#27-强枚举类型)
+  - [25. global and static variables in a shared library](#25-global-and-static-variables-in-a-shared-library)
+  - [26. 返回值优化](#26-返回值优化)
+  - [27. 强枚举类型](#27-强枚举类型)
+  - [28. 运算符重载](#28-运算符重载)
+  - [28. RAII实现两种智能指针的过程](#28-raii实现两种智能指针的过程)
+  - [volatile](#volatile)
+  - [move的意义是什么](#move的意义是什么)
+  - [using用法总结](#using用法总结)
+  - [引用折叠和完美转发](#引用折叠和完美转发)
+  - [C++11 右值引用. 移动语义](#c11-右值引用-移动语义)
+
 
 ## 1. C++中能否使用空对象指针调用成员函数
 > Yes, 只要不涉及到成员变量。因为此时`this`指针指向`nullptr`  
@@ -850,7 +858,11 @@ MyString str4(std::move(str1)); // 调用移动构造函数.
 
 ## using用法总结
 1、导入命名空间 `using namespace std;`
-2、指定别名: 和`typedef`相比，可以用于模板类，但在定义一般类型的别名没区别。
+2、指定别名: 和`typedef`相比，只有它可以用于模板类的别名，但在定义一般类型的别名没区别。 
+```cpp
+template <typename T>
+using Ptr = T*;
+```
 3、在派生类中引用基类成员：如下代码所示，尽管派生类 Derived 对 基类 Base 是私有继承，但通过 using 声明，派生类的对象就可以访问基类的 protected 成员变量和 public 成员函数了
 ```cpp
 class Base{
