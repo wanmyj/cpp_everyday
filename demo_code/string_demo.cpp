@@ -18,7 +18,10 @@ public:
     my_string(nullptr_t) = delete;
     my_string(const my_string& rhs) : size(rhs.size), buf(new char[size+1]) {
         cout<<"copy constructor called"<<endl;
-        strcpy(buf, rhs.buf);
+        if (rhs.buf != nullptr)
+            strcpy(buf, rhs.buf);
+        else
+            __cleanup__();
     }
     my_string& operator=(const my_string& rhs) {
         cout<<"copy assignment operator called"<<endl;
@@ -56,6 +59,7 @@ private:
     void __cleanup__() {
         if (buf != nullptr) {
             delete [] buf;
+            buf = nullptr;
         }
         size = 0;
     }
@@ -65,6 +69,7 @@ int main() {
     my_string str1("Hello");
     my_string str2(str1);
     my_string str3;
+    my_string str6(str3);
     str3 = str1;
     my_string str4(std::move(str1));
     my_string str5;

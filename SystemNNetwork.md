@@ -121,7 +121,7 @@ UDP用`sendto` `recvfrom` 就足够了
 
 注意：`close`操作只是使相应socket描述字的引用计数-1，只有当引用计数为0的时候，才会触发TCP客户端向服务器发送终止连接请求。
 
-<img src="image.png" alt="drawing" style="width:400px;"/>
+<img src="resources/image.png" alt="drawing" style="width:400px;"/>
 
 1. 当客户端调用`connect`时，触发了连接请求，向服务器发送了SYN J包\
 这时connect进入阻塞状态；
@@ -131,7 +131,7 @@ UDP用`sendto` `recvfrom` 就足够了
 服务器收到ACK K+1时，accept返回，至此三次握手完毕，连接建立。
 
 ## 三次握手四次挥手
-<img src="image-1.png" alt="drawing" style="width:400px;"/>
+<img src="resources/image-1.png" alt="drawing" style="width:400px;"/>
 
 <!-- ![alt text](image-1.png) -->
 握手
