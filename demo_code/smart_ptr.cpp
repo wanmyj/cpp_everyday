@@ -42,7 +42,7 @@ private:
 public:
     // contructor
     s_ptr() : counter(new uint()), resource(nullptr) {}
-    s_ptr(T* resc = nullptr) : counter(new uint(1)), resource(resc) {}
+    s_ptr(T* resc) : counter(new uint(1)), resource(resc) {}
     // copy contructor
     s_ptr(const s_ptr& rhs) : counter(rhs.counter), resource(rhs.resource) {
         if (resource != nullptr)
